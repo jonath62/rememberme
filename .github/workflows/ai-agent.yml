@@ -1,45 +1,45 @@
 name: AI Agent
+
 on:
   issues:
-    types: [opened, edited]
+    types: [labeled]
+
 jobs:
   build:
-    if: "!contains(github.event.issue.labels.*.name, 'ai-command-processed')"
+    if: github.event.label.name == 'ai-command'
     runs-on: ubuntu-latest
     permissions:
+      issues: write
       contents: write
       pull-requests: write
-      issues: write
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Check for AI Command label
-        id: check_label
-        run: |
-          if [[ "${{ join(github.event.issue.labels.*.name, ', ') }}" =~ "ai-command" ]]; then
-            echo "run_agent=true" >> $GITHUB_OUTPUT
-          else
-            echo "run_agent=false" >> $GITHUB_OUTPUT
-          fi
-      - name: Run AI Agent
-        if: steps.check_label.outputs.run_agent == 'true'
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies and Run Script
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          pip install google-generativeai PyGithub
+          pip install google-genai PyGithub
           python .github/workflows/agent_work.py
+
       - name: Label issue as processed
-        if: success() && steps.check_label.outputs.run_agent == 'true'
         uses: actions/github-script@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.addLabels({
-              issue_number: context.issue.number,
+            github.rest.issues.add_labels({
               owner: context.repo.owner,
               repo: context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
               labels: ['ai-command-processed']
             })
