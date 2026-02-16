@@ -9,14 +9,16 @@
     pkgs.yarn
     pkgs.nodePackages.pnpm
     pkgs.bun
+    pkgs.gh
+    pkgs.python311                  # Ajoute Python 3.11
+    pkgs.python311Packages.google-generativeai # La librairie IA directement via Nix
   ];
   # Sets environment variables in the workspace
   env = {};
   idx = {
-    # Search for the extensions you want on https://open-vsx.org/ and use "publisher.id"
     extensions = [
-      # "vscodevim.vim"
-      "google.gemini-cli-vscode-ide-companion"
+      "google.gemini-cli-vscode-ide-companion" # Ton extension actuelle
+      "ms-vscode.live-server"                  # Optionnel mais utile
     ];
     workspace = {
       # Runs when a workspace is first created with this `dev.nix` file
