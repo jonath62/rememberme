@@ -1,31 +1,45 @@
 name: AI Agent
-
 on:
   issues:
     types: [opened, edited]
-
 jobs:
   build:
+    if: "!contains(github.event.issue.labels.*.name, 'ai-command-processed')"
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
+        uses: actions/checkout@v4
       - name: Check for AI Command label
         id: check_label
         run: |
-          echo "Issue labels: ${{ join(github.event.issue.labels.*.name, ', ') }}"
           if [[ "${{ join(github.event.issue.labels.*.name, ', ') }}" =~ "ai-command" ]]; then
-            echo "::set-output name=run_agent::true"
+            echo "run_agent=true" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=run_agent::false"
+            echo "run_agent=false" >> $GITHUB_OUTPUT
           fi
-
       - name: Run AI Agent
         if: steps.check_label.outputs.run_agent == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          pip install google-generativeai
-          python .github/workflows/agent_work.py "${{ github.event.issue.title }}" "${{ github.event.issue.body }}"
+          pip install google-generativeai PyGithub
+          python .github/workflows/agent_work.py
+      - name: Label issue as processed
+        if: success() && steps.check_label.outputs.run_agent == 'true'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['ai-command-processed']
+            })
