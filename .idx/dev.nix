@@ -10,8 +10,9 @@
     pkgs.nodePackages.pnpm
     pkgs.bun
     pkgs.gh
-    pkgs.python311                  # Ajoute Python 3.11
-    pkgs.python311Packages.google-generativeai # La librairie IA directement via Nix
+    (pkgs.python311.withPackages (ps: [
+      ps.google-generativeai
+    ]))
   ];
   # Sets environment variables in the workspace
   env = {};
