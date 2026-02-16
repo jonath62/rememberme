@@ -1,15 +1,34 @@
-name: Gemini Code Agent
+name: AI Agent
+
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  issues:
+    types: [opened, edited]
 
 jobs:
-  analyze:
+  build:
+    if: contains(github.event.issue.labels.*.name, 'ai-command')
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Gemini Code Review
-        uses: google-github-actions/setup-gcloud@v2 # On prépare l'accès au Cloud Google
-        # Ici, on configurera plus tard la clé API pour que l'agent puisse écrire du code
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install google-generativeai
+    - name: Run AI Agent
+      env:
+        GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        ISSUE_BODY: ${{ github.event.issue.body }}
+        ISSUE_TITLE: ${{ github.event.issue.title }}
+      run: python agent_work.py
+    - name: Commit and push changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add -A
+        git commit -m "AI Agent: ${{ github.event.issue.title }}" || echo "No changes to commit"
+        git push
