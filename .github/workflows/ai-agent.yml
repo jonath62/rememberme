@@ -1,0 +1,15 @@
+name: Gemini Code Agent
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Gemini Code Review
+        uses: google-github-actions/setup-gcloud@v2 # On prépare l'accès au Cloud Google
+        # Ici, on configurera plus tard la clé API pour que l'agent puisse écrire du code
